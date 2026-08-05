@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Make a Word — Quiz Card Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --cream:#f4f0e6;
+    --ink:#2b2f26;
+    --olive:#6b7a4f;
+    --olive-soft:#8a9a6b;
+    --panel:#ffffff;
+    --panel-border:#dedad0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Georgia', 'Times New Roman', serif;
+    background:#e9e6dc;
+    color:var(--ink);
+    display:flex;
+    min-height:100vh;
+  }
+  /* ---------- Controls panel ---------- */
+  .controls{
+    width:340px;
+    flex-shrink:0;
+    background:var(--panel);
+    border-right:1px solid var(--panel-border);
+    padding:28px 24px;
+    overflow-y:auto;
+    font-family:'Helvetica Neue', Arial, sans-serif;
+  }
+  .controls h1{
+    font-family:'Georgia', serif;
+    font-size:22px;
+    margin:0 0 4px;
+    color:var(--ink);
+  }
+  .controls .sub{
+    font-size:12.5px;
+    color:#8a8578;
+    margin-bottom:24px;
+  }
+  .field{
+    margin-bottom:16px;
+  }
+  .field label{
+    display:block;
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:#7a7666;
+    margin-bottom:6px;
+  }
+  .field input[type="text"]{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid #d8d4c8;
+    border-radius:6px;
+    font-size:14px;
+    font-family:inherit;
+    background:#fbfaf6;
+    color:var(--ink);
+  }
+  .field input[type="text"]:focus{
+    outline:2px solid var(--olive-soft);
+    outline-offset:1px;
+  }
+  .letters-grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:10px;
+    margin-bottom:8px;
+  }
+  .letters-grid .field{margin-bottom:0;}
+  .letters-grid input{
+    text-align:center;
+    text-transform:uppercase;
+    font-weight:700;
+    letter-spacing:.05em;
+  }
+  .letters-grid .center-field{
+    grid-column:1 / span 2;
+    max-width:calc(50% - 5px);
+    margin:0 auto;
+  }
+  .hint{
+    font-size:11.5px;
+    color:#9a9585;
+    margin:-4px 0 20px;
+    line-height:1.4;
+  }
+  .divider{
+    height:1px;
+    background:var(--panel-border);
+    margin:22px 0;
+  }
+  .swatches{
+    display:flex;
+    gap:8px;
+    margin-top:6px;
+  }
+  .swatch{
+    width:28px;height:28px;border-radius:50%;
+    cursor:pointer;
+    border:2px solid transparent;
+  }
+  .swatch.active{border-color:var(--ink);}
+  button#downloadBtn{
+    width:100%;
+    padding:13px;
+    background:var(--ink);
+    color:var(--cream);
+    border:none;
+    border-radius:7px;
+    font-size:14px;
+    font-weight:600;
+    font-family:'Helvetica Neue', Arial, sans-serif;
+    cursor:pointer;
+    margin-top:8px;
+    transition:opacity .15s;
+  }
+  button#downloadBtn:hover{opacity:.85;}
+  button#shuffleBtn{
+    width:100%;
+    padding:11px;
+    background:transparent;
+    color:var(--ink);
+    border:1px solid #d8d4c8;
+    border-radius:7px;
+    font-size:13px;
+    font-weight:600;
+    font-family:'Helvetica Neue', Arial, sans-serif;
+    cursor:pointer;
+    margin-top:10px;
+  }
+  button#shuffleBtn:hover{background:#f4f2ec;}
+
+  /* ---------- Preview / stage ---------- */
+  .stage-wrap{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px;
+    overflow:auto;
+  }
+  #card{
+    width:1080px;
+    height:1080px;
+    transform:scale(0.55);
+    transform-origin:center;
+    background:var(--cream);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:90px 60px 60px;
+    border-radius:4px;
+  }
+  @media (max-width:1300px){
+    #card{transform:scale(0.42);}
+  }
+  @media (max-width:1000px){
+    .controls{width:280px;}
+    #card{transform:scale(0.32);}
+  }
+
+  .card-title{
+    font-size:52px;
+    line-height:1.25;
+    font-weight:700;
+    color:var(--ink);
+    text-align:center;
+    margin:0;
+    letter-spacing:.005em;
+    outline:none;
+    min-width:200px;
+    max-width:840px;
+  }
+  .rule{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin:26px 0 18px;
+  }
+  .rule .line{
+    width:220px;
+    height:1px;
+    background:var(--olive);
+  }
+  .rule .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--olive);
+  }
+  .card-handle{
+    font-size:26px;
+    color:var(--olive);
+    font-weight:600;
+    margin-bottom:70px;
+    text-align:center;
+    outline:none;
+  }
+
+  .grid7{
+    position:relative;
+    width:700px;
+    height:700px;
+    margin-top:10px;
+  }
+  .tile{
+    position:absolute;
+    width:170px;
+    height:170px;
+    background:var(--panel);
+    border:2px solid var(--olive);
+    border-radius:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:84px;
+    font-weight:700;
+    color:var(--ink);
+    outline:none;
+    text-transform:uppercase;
+  }
+  /* center tile */
+  .tile.c { top:265px; left:265px; }
+  /* hexagon ring, clockwise starting at 12 o'clock */
+  .tile.p0{ top:35px;  left:265px; } /* top */
+  .tile.p1{ top:150px; left:464px; } /* upper-right */
+  .tile.p2{ top:380px; left:464px; } /* lower-right */
+  .tile.p3{ top:495px; left:265px; } /* bottom */
+  .tile.p4{ top:380px; left:66px;  } /* lower-left */
+  .tile.p5{ top:150px; left:66px;  } /* upper-left */
+
+  .editable-outline{
+    box-shadow:0 0 0 2px transparent;
+    border-radius:4px;
+    transition:box-shadow .15s;
+  }
+  [contenteditable="true"]:hover{
+    box-shadow:0 0 0 2px var(--olive-soft);
+    border-radius:6px;
+  }
+  [contenteditable="true"]:focus{
+    box-shadow:0 0 0 2px var(--ink);
+    border-radius:6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <h1>Make a Word</h1>
+  <div class="sub">Build your quiz card, then export as a PNG.</div>
+
+  <div class="field">
+    <label for="titleInput">Title</label>
+    <input type="text" id="titleInput" value="How many words can you make with 7 letters?">
+  </div>
+
+  <div class="field">
+    <label for="handleInput">Branding / handle</label>
+    <input type="text" id="handleInput" value="@englishwithjaspreett">
+  </div>
+
+  <div class="divider"></div>
+
+  <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7a7666;margin-bottom:10px;font-family:'Helvetica Neue', Arial, sans-serif;">Letters (7)</label>
+  <div class="letters-grid">
+    <div class="field center-field">
+      <input type="text" id="letterC" maxlength="2" value="A">
+    </div>
+    <div class="field">
+      <input type="text" id="letterP0" maxlength="2" value="T">
+    </div>
+    <div class="field">
+      <input type="text" id="letterP1" maxlength="2" value="E">
+    </div>
+    <div class="field">
+      <input type="text" id="letterP2" maxlength="2" value="C">
+    </div>
+    <div class="field">
+      <input type="text" id="letterP3" maxlength="2" value="H">
+    </div>
+    <div class="field">
+      <input type="text" id="letterP4" maxlength="2" value="E">
+    </div>
+    <div class="field">
+      <input type="text" id="letterP5" maxlength="2" value="R">
+    </div>
+  </div>
+  <div class="hint">Tip: you can also click directly on any letter, the title, or the handle in the preview to edit it in place.</div>
+
+  <div class="divider"></div>
+
+  <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7a7666;margin-bottom:10px;font-family:'Helvetica Neue', Arial, sans-serif;">Accent color</label>
+  <div class="swatches">
+    <div class="swatch active" style="background:#6b7a4f" data-color="#6b7a4f"></div>
+    <div class="swatch" style="background:#b5654a" data-color="#b5654a"></div>
+    <div class="swatch" style="background:#3f6d8e" data-color="#3f6d8e"></div>
+    <div class="swatch" style="background:#8a5b8f" data-color="#8a5b8f"></div>
+    <div class="swatch" style="background:#2b2f26" data-color="#2b2f26"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <button id="shuffleBtn">Shuffle example word</button>
+  <button id="downloadBtn">Download PNG</button>
+</div>
+
+<div class="stage-wrap">
+  <div id="card">
+    <h1 class="card-title" id="titlePreview" contenteditable="true" spellcheck="false">How many words can you make with 7 letters?</h1>
+    <div class="rule">
+      <div class="line"></div>
+      <div class="dot" id="dot1"></div>
+      <div class="line"></div>
+    </div>
+    <div class="card-handle" id="handlePreview" contenteditable="true" spellcheck="false">@englishwithjaspreett</div>
+
+    <div class="grid7">
+      <div class="tile c"  id="tileC"  contenteditable="true" spellcheck="false">A</div>
+      <div class="tile p0" id="tileP0" contenteditable="true" spellcheck="false">T</div>
+      <div class="tile p1" id="tileP1" contenteditable="true" spellcheck="false">E</div>
+      <div class="tile p2" id="tileP2" contenteditable="true" spellcheck="false">C</div>
+      <div class="tile p3" id="tileP3" contenteditable="true" spellcheck="false">H</div>
+      <div class="tile p4" id="tileP4" contenteditable="true" spellcheck="false">E</div>
+      <div class="tile p5" id="tileP5" contenteditable="true" spellcheck="false">R</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const titleInput = document.getElementById('titleInput');
+  const handleInput = document.getElementById('handleInput');
+  const titlePreview = document.getElementById('titlePreview');
+  const handlePreview = document.getElementById('handlePreview');
+
+  const letterMap = [
+    ['letterC','tileC'],
+    ['letterP0','tileP0'],
+    ['letterP1','tileP1'],
+    ['letterP2','tileP2'],
+    ['letterP3','tileP3'],
+    ['letterP4','tileP4'],
+    ['letterP5','tileP5'],
+  ];
+
+  // Sidebar inputs -> preview
+  titleInput.addEventListener('input', () => {
+    titlePreview.textContent = titleInput.value || ' ';
+  });
+  handleInput.addEventListener('input', () => {
+    handlePreview.textContent = handleInput.value || ' ';
+  });
+  letterMap.forEach(([inputId, tileId]) => {
+    const inp = document.getElementById(inputId);
+    const tile = document.getElementById(tileId);
+    inp.addEventListener('input', () => {
+      const val = inp.value.slice(0,2).toUpperCase();
+      tile.textContent = val || '';
+    });
+  });
+
+  // Preview (contenteditable) -> sidebar, kept in sync both ways
+  titlePreview.addEventListener('input', () => {
+    titleInput.value = titlePreview.textContent;
+  });
+  handlePreview.addEventListener('input', () => {
+    handleInput.value = handlePreview.textContent;
+  });
+  letterMap.forEach(([inputId, tileId]) => {
+    const inp = document.getElementById(inputId);
+    const tile = document.getElementById(tileId);
+    tile.addEventListener('input', () => {
+      inp.value = tile.textContent.toUpperCase();
+    });
+    tile.addEventListener('blur', () => {
+      tile.textContent = tile.textContent.trim().toUpperCase() || '';
+    });
+  });
+
+  // Accent color swatches
+  const swatches = document.querySelectorAll('.swatch');
+  swatches.forEach(sw => {
+    sw.addEventListener('click', () => {
+      swatches.forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+      const color = sw.dataset.color;
+      document.documentElement.style.setProperty('--olive', color);
+      document.documentElement.style.setProperty('--olive-soft', color + 'aa');
+    });
+  });
+
+  // Shuffle example words
+  const wordBank = [
+    { letters: ['T','E','A','C','H','E','R'] },   // TEACHER
+    { letters: ['S','T','U','D','E','N','T'] },   // STUDENT
+    { letters: ['G','R','A','M','M','A','R'] },   // GRAMMAR
+    { letters: ['R','E','A','D','I','N','G'] },   // READING
+    { letters: ['W','R','I','T','I','N','G'] },   // WRITING
+    { letters: ['L','E','A','R','N','E','D'] },   // LEARNED
+  ];
+  document.getElementById('shuffleBtn').addEventListener('click', () => {
+    const pick = wordBank[Math.floor(Math.random() * wordBank.length)];
+    const ids = ['letterC','letterP0','letterP1','letterP2','letterP3','letterP4','letterP5'];
+    const tiles = ['tileC','tileP0','tileP1','tileP2','tileP3','tileP4','tileP5'];
+    pick.letters.forEach((L, i) => {
+      document.getElementById(ids[i]).value = L;
+      document.getElementById(tiles[i]).textContent = L;
+    });
+  });
+
+  // Download as PNG
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    const card = document.getElementById('card');
+    const originalTransform = card.style.transform;
+    card.style.transform = 'none';
+    html2canvas(card, { scale: 2, backgroundColor: '#f4f0e6' }).then(canvas => {
+      card.style.transform = originalTransform;
+      const link = document.createElement('a');
+      link.download = 'make-a-word-quiz.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }).catch(() => {
+      card.style.transform = originalTransform;
+      alert('Something went wrong generating the image. Please try again.');
+    });
+  });
+</script>
+
+</body>
+</html>
