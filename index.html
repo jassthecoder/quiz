@@ -310,7 +310,7 @@
   <div class="divider"></div>
 
   <button id="shuffleBtn">Shuffle example word</button>
-  <button id="downloadBtn">Download PNG</button>
+  <button id="downloadBtn">Save / Share Image</button>
 </div>
 
 <div class="stage-wrap">
@@ -416,17 +416,48 @@
     });
   });
 
-  // Download as PNG
+  // Download / Share as PNG
   document.getElementById('downloadBtn').addEventListener('click', () => {
     const card = document.getElementById('card');
     const originalTransform = card.style.transform;
     card.style.transform = 'none';
+
     html2canvas(card, { scale: 2, backgroundColor: '#f4f0e6' }).then(canvas => {
       card.style.transform = originalTransform;
-      const link = document.createElement('a');
-      link.download = 'make-a-word-quiz.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert('Something went wrong generating the image. Please try again.');
+          return;
+        }
+        const file = new File([blob], 'make-a-word-quiz.png', { type: 'image/png' });
+
+        // On phones (iOS/Android), use the native share sheet so people get
+        // a "Save Image" option instead of a confusing silent download.
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'Make a Word quiz' });
+            return;
+          } catch (err) {
+            // User cancelled the share sheet, or it failed — fall through to a fallback below.
+          }
+        }
+
+        const url = URL.createObjectURL(blob);
+        const isIOS = /iP(hone|od|ad)/.test(navigator.platform) ||
+                      (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
+
+        if (isIOS) {
+          // iOS Safari without Web Share support: open the image so the user
+          // can long-press it and choose "Add to Photos".
+          window.open(url, '_blank');
+        } else {
+          const link = document.createElement('a');
+          link.download = 'make-a-word-quiz.png';
+          link.href = url;
+          link.click();
+        }
+      }, 'image/png');
     }).catch(() => {
       card.style.transform = originalTransform;
       alert('Something went wrong generating the image. Please try again.');
