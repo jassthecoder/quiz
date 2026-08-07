@@ -148,25 +148,27 @@
     padding:40px;
     overflow:auto;
   }
+  /* Instagram post size, 4:5 portrait (1080 x 1350) */
   #card{
     width:1080px;
-    height:1080px;
-    transform:scale(0.55);
+    height:1350px;
+    transform:scale(0.5);
     transform-origin:center;
     background:var(--cream);
     position:relative;
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding:90px 60px 60px;
+    justify-content:center;
+    padding:70px 60px;
     border-radius:4px;
   }
   @media (max-width:1300px){
-    #card{transform:scale(0.42);}
+    #card{transform:scale(0.38);}
   }
   @media (max-width:1000px){
     .controls{width:280px;}
-    #card{transform:scale(0.32);}
+    #card{transform:scale(0.3);}
   }
 
   .card-title{
@@ -256,11 +258,11 @@
 
 <div class="controls">
   <h1>Make a Word</h1>
-  <div class="sub">Build your quiz card, then export as a PNG.</div>
+  <div class="sub">Build your quiz card, then export as a PNG (Instagram post, 4:5).</div>
 
   <div class="field">
     <label for="titleInput">Title</label>
-    <input type="text" id="titleInput" value="How many words can you make with 7 letters?">
+    <input type="text" id="titleInput" value="How many words can you make?">
   </div>
 
   <div class="field">
@@ -315,7 +317,7 @@
 
 <div class="stage-wrap">
   <div id="card">
-    <h1 class="card-title" id="titlePreview" contenteditable="true" spellcheck="false">How many words can you make with 7 letters?</h1>
+    <h1 class="card-title" id="titlePreview" contenteditable="true" spellcheck="false">How many words can you make?</h1>
     <div class="rule">
       <div class="line"></div>
       <div class="dot" id="dot1"></div>
